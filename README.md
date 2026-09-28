@@ -26,6 +26,8 @@ This produces three consistent time-series visualizations that can be compared d
 
 ## Repository Structure
 
+Regarding data, because the DAT file of the original data, as well as the cleaned data, are too large to be uploaded to GitHub (over 25mb), and there are potential copyright problems with the data, we only upload the descriptive xml file for referecne here. If data is needed for replication, follow the xml file and download the data from the CPS official website.
+
 ```text
 Zhengyang_Ding_AEDS6400_blog3/
 ├── code/
@@ -33,7 +35,6 @@ Zhengyang_Ding_AEDS6400_blog3/
 │
 ├── data/
 │   ├── cps_00003.xml
-│   ├── cps_00003.dat
 │
 ├── figure/
 │   ├── employment_rate_by_education.png
