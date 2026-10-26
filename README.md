@@ -1,150 +1,45 @@
-source(file.path(getwd(), "code", "01_paths_and_setup.R"))
+# AEDS 6400 Blog Post 3
 
-library(ggplot2)
-library(dplyr)
-library(tidyr)
+## Research Purpose
 
-clean_data_path <- file.path(data_dir, "cps_clean.rds")
-if (!file.exists(clean_data_path)) {
-  stop(
-    "Cleaned CPS data not found at ", clean_data_path,
-    ". Run code/02_data_preparation.R first to generate the cleaned dataset."
-  )
-}
+This repository contains the code and data for my AEDS 6400 blog post 3 assignment.
 
-cps_clean <- readRDS(clean_data_path)
+This blog post explores the following question: how are education attainment and labor market outcomes related in the United States, and how does this relationship change over time?
 
-weighted_mean <- function(x, w) {
-  valid <- !is.na(x) &
-    !is.na(w) &
-    is.finite(x) &
-    is.finite(w) &
-    w > 0
+The analysis targets adults in the U.S., aged 25-64, and the observation covers the period of 2000-2024. Individuals are divided into five groups according to educational attainment: less than high school, high school, some college, bachelor's degree, and graduate degree.
 
-  if (!any(valid)) {
-    return(NA_real_)
-  }
+I employ the following three dimensions to evaluate labor market outcomes: whether individuals worked during the year, how much their income was (if they worked), and whether they experienced unemployment during the year.
 
-  weighted.mean(x[valid], w[valid])
-}
+## Data
 
-weighted_median <- function(x, w) {
-  valid <- !is.na(x) &
-    !is.na(w) &
-    is.finite(x) &
-    is.finite(w) &
-    w > 0
+I use individual samples during the period 2001-2025 because surveys collected information from the previous year instead of the current year. Therefore, the observation window corresponds to 2000-2024.
 
-  x <- x[valid]
-  w <- w[valid]
+The main explanatory variable, educational attainment, is measured using the EDUC variable. EDUC records the highest level of schooling or degree completed, therefore covering many grades and degrees.
 
-  if (length(x) == 0) {
-    return(NA_real_)
-  }
+For the first dimension, we calculate the share of people who worked during the year among the sum for each group. This comes from the variable WORKLY from the CPS dataset. The same is conducted for those who experienced unemployment using UNEMP and labor status indicators.
 
-  ord <- order(x)
-  x <- x[ord]
-  w <- w[ord]
-  cumulative_weight <- cumsum(w)
-  cutoff <- sum(w) / 2
+For the second dimension, we use the variable INCWAGE as the original data source, which reports income in nominal U.S. dollars. We first transfer the income to real terms using the 2024 CPI as the deflator.
 
-  x[which(cumulative_weight >= cutoff)[1]]
-}
+All the shares and descriptive values above are calculated in the weighted form according to the person-level sampling weight from the dataset. This enables our findings to depict the whole U.S. labor market.
 
-employment_data <- cps_clean %>%
-  filter(work_code %in% c(1, 2)) %>%
-  mutate(worked = ifelse(work_code == 2, 1, 0)) %>%
-  group_by(labor_year, education) %>%
-  summarise(
-    employment_rate = weighted_mean(worked, weight) * 100,
-    n = n(),
-    .groups = "drop"
-  )
+This produces three consistent time-series visualizations that can be compared directly across education groups.
 
-p1 <- ggplot(employment_data, aes(x = labor_year, y = employment_rate, color = education)) +
-  geom_line(linewidth = 1) +
-  labs(
-    title = "Employment Rates by Educational Attainment",
-    subtitle = "U.S. adults aged 25-64",
-    x = "Year",
-    y = "Employment rate (%)",
-    color = "Educational attainment"
-  ) +
-  guides(color = guide_legend(nrow = 2, byrow = TRUE)) +
-  theme_minimal() +
-  theme(
-    legend.position = "bottom",
-    legend.text = element_text(size = 9),
-    plot.title = element_text(face = "bold")
-  )
+## Repository Structure
 
-ggsave(file.path(figure_dir, "employment_rate_by_education.png"), plot = p1, width = 10, height = 6, dpi = 300)
-
-cpi <- read.csv("https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL")
-cpi$year <- format(as.Date(cpi$observation_date), "%Y")
-cpi_annual <- aggregate(CPIAUCSL ~ year, data = cpi, FUN = mean)
-cpi_annual$year <- as.numeric(cpi_annual$year)
-cpi_2024 <- cpi_annual %>% filter(year == 2024) %>% pull(CPIAUCSL)
-
-wage_data <- cps_clean %>%
-  filter(!is.na(wage), wage > 0, wage < 99999999) %>%
-  left_join(cpi_annual, by = c("labor_year" = "year")) %>%
-  mutate(real_wage_2024 = wage * cpi_2024 / CPIAUCSL)
-
-wage_summary <- wage_data %>%
-  group_by(labor_year, education) %>%
-  summarise(
-    median_wage = weighted_median(real_wage_2024, weight),
-    n = n(),
-    .groups = "drop"
-  )
-
-p2 <- ggplot(wage_summary, aes(x = labor_year, y = median_wage, color = education)) +
-  geom_line(linewidth = 1) +
-  labs(
-    title = "Median Annual Wage by Educational Attainment",
-    subtitle = "U.S. adults aged 25-64, expressed in 2024 dollars",
-    x = "Year",
-    y = "Median annual wage (2024 dollars)",
-    color = "Educational attainment"
-  ) +
-  guides(color = guide_legend(nrow = 2, byrow = TRUE)) +
-  theme_minimal() +
-  theme(
-    legend.position = "bottom",
-    legend.text = element_text(size = 9),
-    plot.title = element_text(face = "bold")
-  )
-
-ggsave(file.path(figure_dir, "median_wage_by_education.png"), plot = p2, width = 10, height = 6, dpi = 300)
-
-unemployment_data <- cps_clean %>%
-  filter(!is.na(weeks_unem), weeks_unem >= 0, weeks_unem <= 52) %>%
-  mutate(any_unemployment = ifelse(weeks_unem > 0, 1, 0)) %>%
-  group_by(labor_year, education) %>%
-  summarise(
-    unemployment_share = weighted_mean(any_unemployment, weight) * 100,
-    n = n(),
-    .groups = "drop"
-  )
-
-p3 <- ggplot(unemployment_data, aes(x = labor_year, y = unemployment_share, color = education)) +
-  geom_line(linewidth = 1) +
-  labs(
-    title = "Share Experiencing Unemployment by Educational Attainment",
-    subtitle = "U.S. adults aged 25-64",
-    x = "Year",
-    y = "Share experiencing unemployment (%)",
-    color = "Educational attainment"
-  ) +
-  guides(color = guide_legend(nrow = 2, byrow = TRUE)) +
-  theme_minimal() +
-  theme(
-    legend.position = "bottom",
-    legend.text = element_text(size = 9),
-    plot.title = element_text(face = "bold")
-  )
-
-ggsave(file.path(figure_dir, "unemployment_by_education.png"), plot = p3, width = 10, height = 6, dpi = 300)
-
-message("Saved figures to: ", figure_dir)
+```text
+Zhengyang_Ding_AEDS6400_blog3/
+├── code/
+│   ├── data_analysis.R
+│
+├── data/
+│   ├── cps_00003.xml
+│   ├── cps_00003.dat
+│
+├── figure/
+│   ├── employment_rate_by_education.png
+│   ├── median_wage_by_education.png
+│   └── unemployment_by_education.png
+│
+├── README.md
+└── AEDS6400_blog3.Rproj
+```
