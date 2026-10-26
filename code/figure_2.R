@@ -4,12 +4,43 @@ library(ggplot2)
 library(tidyr)
 library(readr)
 
+resolve_repo_root <- function() {
+  script_path <- NULL
+
+  tryCatch({
+    script_path <- normalizePath(sys.frames()[[1]]$ofile, winslash = "/", mustWork = FALSE)
+  }, error = function(e) {
+    script_path <<- NULL
+  })
+
+  if (!is.null(script_path)) {
+    script_dir <- dirname(script_path)
+    if (basename(script_dir) == "code") {
+      return(normalizePath(dirname(script_dir), winslash = "/", mustWork = FALSE))
+    }
+    return(normalizePath(script_dir, winslash = "/", mustWork = FALSE))
+  }
+
+  normalizePath(getwd(), winslash = "/", mustWork = FALSE)
+}
+
+repo_root <- resolve_repo_root()
+data_dir <- file.path(repo_root, "data")
+figure_dir <- file.path(repo_root, "figure")
+
+if (!dir.exists(data_dir)) {
+  stop("Data directory not found: ", data_dir)
+}
+if (!dir.exists(figure_dir)) {
+  dir.create(figure_dir, recursive = TRUE)
+}
+
 # ============================================================
 # Data loading
 # ============================================================
 
 ddi <- read_ipums_ddi(
-  "D:/Rproject/6400_blog_3/cps_00003.xml"
+  file.path(data_dir, "cps_00003.xml")
 )
 
 cps <- read_ipums_micro(ddi)
@@ -82,29 +113,29 @@ cps_clean <- cps_clean %>%
 # ============================================================
 
 weighted_median <- function(x, w) {
-  
+
   valid <- !is.na(x) &
     !is.na(w) &
     is.finite(x) &
     is.finite(w) &
     w > 0
-  
+
   x <- x[valid]
   w <- w[valid]
-  
+
   if (length(x) == 0) {
     return(NA_real_)
   }
-  
+
   ord <- order(x)
-  
+
   x <- x[ord]
   w <- w[ord]
-  
+
   cumulative_weight <- cumsum(w)
-  
+
   cutoff <- sum(w) / 2
-  
+
   x[
     which(
       cumulative_weight >= cutoff
@@ -207,7 +238,7 @@ ggplot(
   )
 
 ggsave(
-  "median_wage_by_education.png",
+  file.path(figure_dir, "median_wage_by_education.png"),
   width = 10,
   height = 6,
   dpi = 300
