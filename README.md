@@ -42,6 +42,7 @@ Zhengyang_Ding_AEDS6400_blog3/
 │   └── unemployment_by_education.png
 │
 ├── README.md
+├── .gitignore
 └── AEDS6400_blog3.Rproj
 ```
 
