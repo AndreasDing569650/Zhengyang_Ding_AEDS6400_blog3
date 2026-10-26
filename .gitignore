@@ -1,0 +1,23 @@
+# R project temporary/session files
+.Rproj.user/
+.Rhistory
+.Rapp.history
+.RData
+.RDataTmp
+.Ruserdata/
+.Renviron
+.Rprofile
+
+# R object/output files that are typically generated locally
+*.Rproj.user
+*.Rapp.history
+*.rds
+*.Rds
+*.rda
+*.Rda
+
+# Local logs
+*.log
+
+# Keep the project files and data/code/figure assets tracked
+# (do not ignore the existing repository files under code/, data/, figure/, README.md, or the .Rproj file)
