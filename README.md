@@ -4,34 +4,38 @@
 
 This repository contains the code and data for my AEDS 6400 blog post 3 assignment.
 
-This blog post explores the following question: how are education attainment and labor market outcomes related in the United States, and how does this relationship change over time?
+This blog post explores the following question: how are educational attainment and labor market outcomes related in the United States, and how does this relationship change over time?
 
-The analysis targets adults in the U.S., aged 25-64, and the observation covers the period of 2000-2024. Individuals are divided into five groups according to educational attainment: less than high school, high school diploma, some college/associate degree, bachelor's degree, and graduate degree.
+The analysis focuses on U.S. adults ages 25-64 and covers the period from 2000 to 2024. Individuals are divided into five groups based on educational attainment: less than high school, high school diploma, some college / associate degree, four-year college / bachelor's degree, and graduate degree.
 
-I employ the following three dimensions to evaluate labor market outcomes: whether individuals worked during the year, how much their income was (if they worked), and whether they experienced unemployment.
+I use three outcome dimensions to evaluate labor market performance:
+
+- whether individuals worked during the year
+- how much income they earned if they worked
+- how long individuals spent looking for work or being on layoff
+
+These measures are then compared across education groups over time to show how educational differences in labor market outcomes evolve.
 
 ## Data
 
-I use individual samples during the period 2001-2025 because surveys collected information from the previous year instead of the current year. Therefore, the observation window corresponds to 2000-2024 in calendar-year terms.
+The analysis uses CPS ASEC microdata from IPUMS for the years 2001-2025. The survey records information for the previous year, so the labor-market measures are aligned to the period 2000-2024.
 
-The main explanatory variable, educational attainment, is measured using the EDUC variable. EDUC records the highest level of schooling or degree completed, therefore covering many grades and degree categories.
+The main explanatory variable is educational attainment, measured using the `EDUC` variable. `EDUC` records the highest level of schooling or degree completed and is used to construct the five education groups.
 
-For the first dimension, we calculate the share of people who worked during the year among the sum for each group. This comes from the variable WORKLY from the CPS dataset. The same is conducted for the unemployment outcome using the variable WKSUNEM1.
+For the employment measure, I calculate the weighted share of adults who worked during the year using `WORKLY`. For the income measure, I use `INCWAGE` and convert nominal earnings into real 2024 dollars using the CPI. For the job-search measure, I use `WKSUNEM1`, which records the number of weeks a person spent looking for work or on layoff.
 
-For the second dimension, we use the variable INCWAGE as the original data source, which reports income in nominal U.S. dollars. We first transfer the income to real terms using the 2024 CPI as the deflator, then summarize the typical pay level by education group.
-
-All the shares and descriptive values above are calculated in the weighted form according to the person-level sampling weight from the dataset. This enables our findings to depict the whole U.S. labor market rather than only the observed sample.
-
-This produces three consistent time-series visualizations that can be compared directly across education groups.
+All estimates are computed using the person-level sampling weight (`ASECWT`) so the results represent the broader U.S. adult population.
 
 ## Repository Structure
 
-Regarding data, because the DAT file of the original data, as well as the cleaned data, are too large to be uploaded to GitHub (over 25mb), and there are potential copyright problems with the data source, only the metadata file and processed outputs are included here.
+The repository is organized into separate R scripts for each figure, with one script responsible for the data preparation and plotting of each outcome.
 
 ```text
 Zhengyang_Ding_AEDS6400_blog3/
 ├── code/
-│   ├── data_analysis.R
+│   ├── figure_1.R
+│   ├── figure_2.R
+│   └── figure_3.R
 │
 ├── data/
 │   ├── cps_00003.xml
@@ -39,30 +43,35 @@ Zhengyang_Ding_AEDS6400_blog3/
 ├── figure/
 │   ├── employment_rate_by_education.png
 │   ├── median_wage_by_education.png
-│   └── unemployment_by_education.png
+│   └── average_weeks_unem_by_education.png
 │
 ├── README.md
 ├── .gitignore
-└── AEDS6400_blog3.Rproj
+├── AEDS6400_blog3.Rproj
+└── .Rhistory
 ```
 
-## What the code does
+## What each code script does
 
-The script `code/data_analysis.R` reads the CPS microdata and metadata stored in the `data/` folder, filters the sample to U.S. adults ages 25-64, and classifies respondents into education groups.
+The project is split into three separate plotting scripts in the `code/` folder. Each script reads the same CPS data, applies the same age and education filtering, and saves one figure to the `figure/` folder.
 
-It then computes annual weighted estimates of:
+- `code/figure_1.R` creates the employment-rate figure.
+  - It filters the sample to adults ages 25-64.
+  - It maps each respondent to an education group.
+  - It calculates the weighted employment rate by year and education level.
+  - It saves the result as `figure/employment_rate_by_education.png`.
 
-- employment rate
-- median annual wage in 2024 dollars
-- unemployment share
+- `code/figure_2.R` creates the wage figure.
+  - It uses `INCWAGE` and converts wages to real 2024 dollars using the CPI.
+  - It computes the weighted median annual wage by year and education group.
+  - It saves the result as `figure/median_wage_by_education.png`.
 
-Finally, it saves three plots to the `figure/` folder:
+- `code/figure_3.R` creates the job-search duration figure.
+  - It uses `WKSUNEM1` to measure the average number of weeks spent looking for work or on layoff.
+  - This figure is framed as a measure of labor market friction and difficulty in job matching, rather than simply unemployment share.
+  - It saves the result as `figure/average_weeks_unem_by_education.png`.
 
-- `employment_rate_by_education.png`
-- `median_wage_by_education.png`
-- `unemployment_by_education.png`
-
-The purpose of the analysis is to compare labor market outcomes across education levels and examine how these differences change over time.
+Together, these three scripts produce a consistent set of figures showing how employment, wages, and job-search duration vary by education level over time.
 
 ## Input data
 
@@ -77,7 +86,7 @@ The script looks for:
   - `cps_00003.csv`
   - `cps_00003.csv.gz`
 
-The script relies on the following variables from the CPS data:
+The scripts rely on the following variables from the CPS data:
 
 - `YEAR`
 - `AGE`
@@ -89,11 +98,11 @@ The script relies on the following variables from the CPS data:
 
 ## Output files
 
-Running the script creates the following output in the `figure/` directory:
+Running the scripts creates the following outputs in the `figure/` directory:
 
 - `employment_rate_by_education.png` — employment rate by year and educational attainment
 - `median_wage_by_education.png` — median annual wage by year and educational attainment, adjusted to 2024 dollars
-- `unemployment_by_education.png` — unemployment share by year and educational attainment
+- `average_weeks_unem_by_education.png` — average number of weeks looking for work or on layoff by year and educational attainment
 
 ## How to reproduce the analysis
 
@@ -105,10 +114,12 @@ install.packages(c("ipumsr", "dplyr", "ggplot2", "tidyr", "readr"))
 ```
 
 3. Place the required CPS metadata and microdata files into the `data/` folder.
-4. Run the analysis script:
+4. Run the plotting scripts individually:
 
 ```r
-source("code/data_analysis.R")
+source("code/figure_1.R")
+source("code/figure_2.R")
+source("code/figure_3.R")
 ```
 
 5. Check the generated figures in the `figure/` folder.
