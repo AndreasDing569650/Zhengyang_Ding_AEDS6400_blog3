@@ -47,8 +47,7 @@ Zhengyang_Ding_AEDS6400_blog3/
 │
 ├── README.md
 ├── .gitignore
-├── AEDS6400_blog3.Rproj
-└── .Rhistory
+└── AEDS6400_blog3.Rproj
 ```
 
 ## What each code script does
